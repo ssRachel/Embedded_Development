@@ -1,0 +1,8 @@
+--cpu Cortex-M3
+".\output\main.o"
+".\output\startup_stm32f10x_hd.o"
+".\output\system_stm32f10x.o"
+--library_type=microlib --strict --scatter ".\Output\Test_LED.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\Test_LED.map" -o .\Output\Test_LED.axf
