@@ -23,6 +23,145 @@
 // PA1输出数据设置可以有两个寄存器
 // ODR 和 BSRR
 
+volatile uint32_t g_ms_ticks = 0;
+
+
+void Delay(volatile uint32_t count)
+{
+	while(count > 0)
+	{
+		count--;
+	
+	}
+}
+
+
+
+void SysTick_Handler(void)
+{
+	
+	g_ms_ticks++;
+}
+
+
+void Delay_ms(uint32_t ms)
+{
+	while(ms--)
+	{
+	
+		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk))
+		{
+			
+		}
+	}
+
+
+}
+
+
+void SysTick_Init(void)
+{
+	// 当系统时钟数值增加到设置的LOAD时, 表示过了1ms
+	SysTick->LOAD = SystemCoreClock / 1000 - 1;
+	
+	// 将系统时钟数值清零
+	SysTick->VAL = 0;
+	
+	// 开启SysClk, 选择HCLK作为SysClk, 不开启中断
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+	
+}
+
+// 使能GPIOA时钟
+void lab_gpioa_clk_en()
+{
+	RCC->APB2ENR |= (1U << 2);
+}
+
+// 设置PA1工作模式
+void lab_pa1_workmode()
+{
+	GPIOA->CRL &= ~(0xF << 4);
+	GPIOA->CRL |= (0x2 << 4);
+}
+
+void lab_led_on()
+{
+	GPIOA->BRR = (1U << 1);
+}
+
+void lab_led_off()
+{
+	GPIOA->BSRR = (1U << 1);
+}
+
+// lab2
+// 使用系统时钟源SysTick轮询方式,控制LED亮灭
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void lab_delay_sysclk(uint32_t ms)
+{
+	while(ms--)
+	{
+		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk))
+		{
+		}
+	}
+}
+
+void lab2(void)
+{
+	lab_gpioa_clk_en();
+	
+	lab_pa1_workmode();
+	
+	SysTick_Init();
+	
+	while(1)
+	{
+		lab_led_on();
+		lab_delay_sysclk(1000);
+		lab_led_off();
+		lab_delay_sysclk(1000);
+	}
+
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+// lab1
+// 使用软件延时,控制LED亮灭
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void lab_delay(volatile uint32_t count)
+{
+	while(count > 0)
+	{
+		count--;
+	}
+}
+
+
+// 使用软件延时,控制LED亮灭
+void lab1(void)
+{
+	lab_gpioa_clk_en();
+	
+	lab_pa1_workmode();
+
+	while(1)
+	{
+		lab_led_on();
+		lab_delay(5000000);
+		lab_led_off();
+		lab_delay(5000000);
+	}
+
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 int main(void)
 {
@@ -35,10 +174,13 @@ int main(void)
 	//GPIOA->ODR |= (0x1 << 1); // 输出高电平
 	//GPIOA->ODR &= ~(0x1 << 1); // 输出低电平
 	//GPIOA->BSRR = (1U << 1); // 输出高电平
-	GPIOA->BSRR = (1U << (16+1)); //输出低电平
+	//GPIOA->BSRR = (1U << (16+1)); //输出低电平
 	while(1)
 	{
-	
+		GPIOA->BRR = (1U << 1);
+		Delay(500000);
+		GPIOA->BSRR = (1U << 1);
+		Delay(500000);
 	
 	}
 }
