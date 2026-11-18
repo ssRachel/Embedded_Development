@@ -1,4 +1,6 @@
 #include "stm32f10x.h"
+#include <stdio.h>
+
 // 寄存器点亮LED
 // 1.使能外设时钟
 // 2.设置LED对应GPIO引脚工作模式
@@ -23,54 +25,7 @@
 // PA1输出数据设置可以有两个寄存器
 // ODR 和 BSRR
 
-volatile uint32_t g_ms_ticks = 0;
 
-
-void Delay(volatile uint32_t count)
-{
-	while(count > 0)
-	{
-		count--;
-	
-	}
-}
-
-
-
-void SysTick_Handler(void)
-{
-	
-	g_ms_ticks++;
-}
-
-
-void Delay_ms(uint32_t ms)
-{
-	while(ms--)
-	{
-	
-		while(!(SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk))
-		{
-			
-		}
-	}
-
-
-}
-
-
-void SysTick_Init(void)
-{
-	// 当系统时钟数值增加到设置的LOAD时, 表示过了1ms
-	SysTick->LOAD = SystemCoreClock / 1000 - 1;
-	
-	// 将系统时钟数值清零
-	SysTick->VAL = 0;
-	
-	// 开启SysClk, 选择HCLK作为SysClk, 不开启中断
-	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
-	
-}
 
 // 使能GPIOA时钟
 void lab_gpioa_clk_en()
@@ -95,9 +50,85 @@ void lab_led_off()
 	GPIOA->BSRR = (1U << 1);
 }
 
+
+// lab3
+// 使用系统时钟源SysTick中断方式,控制LED亮灭
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+volatile uint32_t g_ms_ticks = 0;
+
+void SysTick_Handler(void)
+{
+	
+	g_ms_ticks++;
+}
+
+
+void SysTick_Init_Interrupt()
+{
+	// 当设置的LOAD值递减到0时, 表示过了1ms
+	SysTick->LOAD = SystemCoreClock / 1000 -1;
+	
+	// 将系统时钟数值清零
+	SysTick->VAL = 0;
+	
+	// 开启SysClk, 选择HCLK作为SysClk, 开启中断
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+
+}
+
+
+void LED_Task()
+{
+	static uint32_t last_ticks = 0;
+	
+	//printf("g_ms_ticks=%d, last_ticks=%d", g_ms_ticks, last_ticks);
+	
+	if((uint32_t)(g_ms_ticks - last_ticks) >= 1000)
+	{
+		last_ticks = g_ms_ticks;
+		
+		GPIOA->ODR ^= (1U << 1);
+	}
+
+}
+
+
+void lab3(void)
+{
+	lab_gpioa_clk_en();
+	
+	lab_pa1_workmode();
+	
+	SysTick_Init_Interrupt();
+	
+	while(1)
+	{
+		LED_Task();
+	
+	
+	}
+
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // lab2
 // 使用系统时钟源SysTick轮询方式,控制LED亮灭
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void SysTick_Init(void)
+{
+	// 当设置的LOAD值递减到0时, 表示过了1ms
+	SysTick->LOAD = SystemCoreClock / 1000 - 1;
+	
+	// 将系统时钟数值清零
+	SysTick->VAL = 0;
+	
+	// 开启SysClk, 选择HCLK作为SysClk, 不开启中断
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+	
+}
 
 void lab_delay_sysclk(uint32_t ms)
 {
@@ -166,21 +197,26 @@ void lab1(void)
 int main(void)
 {
 	// 1.使能GPIOA时钟
-	RCC->APB2ENR |= (1U << 2);
+	//RCC->APB2ENR |= (1U << 2);
 	// 2.设置PA1工作模式
-	GPIOA->CRL &= ~(0xF << 4);
-	GPIOA->CRL |= (0x2 << 4);
+	//GPIOA->CRL &= ~(0xF << 4);
+	//GPIOA->CRL |= (0x2 << 4);
 	// 3.设置点亮LED
 	//GPIOA->ODR |= (0x1 << 1); // 输出高电平
 	//GPIOA->ODR &= ~(0x1 << 1); // 输出低电平
 	//GPIOA->BSRR = (1U << 1); // 输出高电平
 	//GPIOA->BSRR = (1U << (16+1)); //输出低电平
-	while(1)
-	{
-		GPIOA->BRR = (1U << 1);
-		Delay(500000);
-		GPIOA->BSRR = (1U << 1);
-		Delay(500000);
+	//while(1)
+	//{
+	//	GPIOA->BRR = (1U << 1);
+	//	Delay(500000);
+	//	GPIOA->BSRR = (1U << 1);
+	//	Delay(500000);
+	//}
 	
-	}
+	//lab1();
+	//lab2();
+	lab3();
+	
+	
 }
