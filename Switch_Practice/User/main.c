@@ -51,6 +51,7 @@ int main(void)
 	LED_Init();
 	
 	LED1_Off();
+	//LED1_On();
 	
 	KEY_Init();
 
